@@ -37,10 +37,6 @@ ADDRESS SYSTEM "sort" WITH INPUT STEM rightSide. OUTPUT STEM rightSide.
 do i=0 to leftSide.0 by 1
     tempMax=max(leftSide.i,rightSide.i)
     tempMin=min(leftSide.i,rightSide.i)
-    /*actually setting these to the respective columns because i'm sure it*/
-    /*will be used in part two.*/
-    leftSide.i=tempMin
-    rightSide.i=tempMax
     total=total+(tempMax-tempMin)
 end
 
