@@ -44,32 +44,14 @@ do i=1 to inLine.0 by 1
     call decTest(tempLine)
     decreaseVal=result
 
-    /*if decreaseVal=0 then call decDampaner(tempLine)
-    decreaseVal=result
-    if increaseVal=0 then call incDampaner(tempLine)
-    increaseVal=result
-    if adjVal=0 then call adjDampaner(templine)
-    adjVal=result*/
- 
     if ((decreaseVal=1) | (increaseVal=1)) & adjVal=1 then
     do
-        say tempLine
         totalSafeReports=totalSafeReports+1
     end
     else do /*test with dampaner if a failure*/
-        currentValid=decreaseVal+decreaseVal+adjVal
-        if decreaseVal=0 & currentValid=1 then call decDampaner(tempLine)
-        decreaseVal=result
-        if increaseVal=0 & currentValid=1 then call incDampaner(tempLine)
-        increaseVal=result
-        if adjVal=0 & currentValid=1 then call adjDampaner(templine)
-        adjVal=result
-
-
-
-        if ((decreaseVal=1) | (increaseVal=1)) & adjVal=1 then
-        do
-            say tempLine
+        call dampaner(tempLine)
+        dampanedResult=result
+        if dampanedResult=1 then do
             totalSafeReports=totalSafeReports+1
         end
     end
@@ -183,45 +165,21 @@ rebuildLine: arg num curLine
 
 
 /*see if you can get a true result for adj by removing 1 variable */
-adjDampaner: arg curLine
-    parse var curLine curLine.1 curLine.2 curLine.3 curLine.4,
-    curLine.5 curLine.6 curLine.7 curLine.8 
-    valCount=words(curLine)
-    do l=1 to valCount by 1
-        call rebuildLine(l curLine)
-        workingLine=result
-        call adjTest(workingLine)
-        safeVal=result
-        if safeVal=1 then return 1
-    end
-    return 0
 
-    /*see if you can get a true result for adj by removing 1 variable */
-incDampaner: arg curLine
-    parse var curLine curLine.1 curLine.2 curLine.3 curLine.4,
-    curLine.5 curLine.6 curLine.7 curLine.8 
-    valCount=words(curLine)
-    
-    do l=1 to valCount by 1
-        call rebuildLine(l curLine)
-        workingLine=result
-        call incTest(workingLine)
-        safeVal=result
-        if safeVal=1 then return 1
-    end
-    return 0
 
-    /*see if you can get a true result for adj by removing 1 variable */
-decDampaner: arg curLine
-    valCount=words(curLine)
-     do l=1 to valCount by 1
-        call rebuildLine(l curLine)
+/*test if removing 1 variable will produce a valid line*/
+dampaner: arg givenLine
+    valCount=words(givenLine)
+    do l=1 to valCount by 1
+        call rebuildLine(l givenLine)
         workingLine=result
         call decTest(workingLine)
-        safeVal=result
-        if safeVal=1 then return 1
+        decSafe=result
+        call incTest(workingLine)
+        incSafe=result
+        call adjTest(workingLine)
+        safeAdj=result
+        if decSafe+safeAdj=2 then return 1
+        if incSafe+safeAdj=2 then return 1
     end
     return 0
-
-/*test adjacent and decrease under the same conditions of* 
-dedAndAdjDampaner:
