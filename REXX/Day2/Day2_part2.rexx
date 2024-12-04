@@ -10,8 +10,9 @@
 /* i'll work with 9 just in case*/
 
 
-/*Part 2. anow allow for reports with a single bad level and count those*/
+/*Part 2. now allow for reports with a single bad level and count those*/
 /*as safe as well*/
+
 
 totalSafeReports=0
 
@@ -32,82 +33,49 @@ call lineout inFile
 /* parse the input line*/
 
 do i=1 to inLine.0 by 1
-    /*reset vars knowing some may be empty on the line */
-    parse var inLine.i inLine.i.1 inLine.i.2 inLine.i.3 inLine.i.4,
-    inLine.i.5 inLine.i.6 inLine.i.7 inLine.i.8 inLine.i.9 inLine.i.10
 
-
-    /*iterate through all lines. test if chexkAdj and if either increase or */
+    /*iterate through all lines. test if check adj and if either increase or */
     /* decrease are safe, if so. increase totalSafeReports by 1*/
-    adjVal='TRUE'
-    increaseVal='TRUE'
-    decreaseVal='TRUE'
-    badAdjCount=0
-    badAdjLoc=''
-    badIncCount=0
-    badIncLoc=''
-    badDecCount=0
-    badDecLoc=''
-    do j=1 to 10 by 1
-        k=j+1
-        L=j+2
-        call checkAdj(adjVal inLine.i.j inLine.i.k)
-        adjVal = RESULT
-        call checkIncrease(increaseVal inLine.i.j inLine.i.k)
-        increaseVal=RESULT
-        call checkDecrease(decreaseVal inLine.i.j inLine.i.k)
-        decreaseVal=RESULT
-    /*check to see if allowing 1 bad value will make the output pass*/
-        /*adjacent*/
-        if (badAdjCount<1 & adjVal='FALSE') then
-        do
-            badAdjCount=badAdjCount+1
-            badAdjLoc=j
-            call checkAdj('TRUE' inLine.i.k inLine.i.L)
-            adjVal = RESULT
-        end
-        else nop
-        /*increase*/
-        if (badIncCount<1 & increaseVal='FALSE') then
-        do
-            badIncCount=badIncCount+1
-            badIncLoc=j
-            call checkIncrease('TRUE' inLine.i.k inLine.i.L)
-            increaseVal = RESULT
-        end
-        else nop
-        /*decrease*/
-        if (badDecCount<1 & decreaseVal='FALSE') then
-        do
-            badDecCount=badDecCount+1
-            badDecLoc=j
-            call checkDecrease('TRUE' inLine.i.k inLine.i.L)
-            decreaseVal = RESULT
-        end
-        else nop
-    end
-    /* allow for a single flaw in a report*/
-    if decreaseVal='TRUE' & adjVal='TRUE' then
-    do
-        if badAdjCount+badDecCount<2 then totalSafeReports=totalSafeReports+1
-        if badAdjCount+badDecCount=3 & badAdjLoc=badDecLoc then 
-        do
-            totalSafeReports=totalSafeReports+1
-        end
-        else nop
-    end
-    else nop
-    if increaseVal='TRUE' & adjVal='TRUE' then
-    do
-        if badAdjCount+badIncCount<2 then totalSafeReports=totalSafeReports+1
-        if badAdjCount+badIncCount=3 & badAdjLoc=badIncLoc then 
-        do
-            totalSafeReports=totalSafeReports+1
-        end
-        else nop
-    end
-    else nop
+    tempLine=inLine.i
+    call adjTest(tempLine)
+    adjVal=result
+    call incTest(tempLine)
+    increaseVal=result
+    call decTest(tempLine)
+    decreaseVal=result
+
+    /*if decreaseVal=0 then call decDampaner(tempLine)
+    decreaseVal=result
+    if increaseVal=0 then call incDampaner(tempLine)
+    increaseVal=result
+    if adjVal=0 then call adjDampaner(templine)
+    adjVal=result*/
  
+    if ((decreaseVal=1) | (increaseVal=1)) & adjVal=1 then
+    do
+        say tempLine
+        totalSafeReports=totalSafeReports+1
+    end
+    else do /*test with dampaner if a failure*/
+        currentValid=decreaseVal+decreaseVal+adjVal
+        if decreaseVal=0 & currentValid=1 then call decDampaner(tempLine)
+        decreaseVal=result
+        if increaseVal=0 & currentValid=1 then call incDampaner(tempLine)
+        increaseVal=result
+        if adjVal=0 & currentValid=1 then call adjDampaner(templine)
+        adjVal=result
+
+
+
+        if ((decreaseVal=1) | (increaseVal=1)) & adjVal=1 then
+        do
+            say tempLine
+            totalSafeReports=totalSafeReports+1
+        end
+    end
+
+
+  
 
 end
 
@@ -127,14 +95,14 @@ exit
 /*if both vars are less than 3 and at leat 1, and boolean is not false*/
 /* then return true.*/
 checkAdj: Arg boolVal inVar1 inVar2
-    if boolVal='FALSE' then return boolVal
+    if boolVal=0 then return boolVal
     if inVar1='' then return boolVal
     if inVar2='' then return boolVal
     maxVal=max(inVar1,inVar2)
     minVal=min(inVar1,inVar2)
     diff=maxVal-minVal
-    if diff >=1 & diff <=3 then return 'TRUE'
-    else return 'FALSE'
+    if diff >=1 & diff <=3 then return 1
+    else return 0
 
 /* takes 3 values, 2 vars and a boolean value*/
 /*if the boolean is already false, return the boolean */
@@ -142,26 +110,118 @@ checkAdj: Arg boolVal inVar1 inVar2
 /*if the second var is greater than the first, and boolean is not false*/
 /* then return true.*/
 checkIncrease: Arg boolVal inVar1 inVar2
-    if boolVal='FALSE' then return boolVal
+    if boolVal=0 then return boolVal
     if inVar1='' then return boolVal
     if inVar2='' then return boolVal
-    if inVar2>inVar1 then return 'TRUE'
-    else return 'FALSE'
+    if inVar2>inVar1 then return 1
+    else return 0
 
 /* takes 3 values, 2 vars and a boolean value*/
 /*if the boolean is already false, return the boolean */
-/*if 1 or mmoreare vars are empty, return the boolean*/
+/*if 1 or more vars are empty, return the boolean*/
 /*if the second var is smaller than the first, and boolean is not false*/
 /* then return true.*/
 checkDecrease: Arg boolVal inVar1 inVar2
-    if boolVal='FALSE' then return boolVal
+    if boolVal=0 then return boolVal
     if inVar1='' then return boolVal
     if inVar2='' then return boolVal
-    if inVar2<inVar1 then return 'TRUE'
-    else return 'FALSE'
+    if inVar2<inVar1 then return 1
+    else return 0
 
 
+/*given a line, see if it passes the adjacent test*/
+adjTest: arg curLine
+    parse var curLine curLine.1 curLine.2 curLine.3 curLine.4,
+    curLine.5 curLine.6 curLine.7 curLine.8 
+    valCount=words(curLine)
+    outVal=1
+    do j=1 to valCount-1 by 1
+        k=j+1
+        call checkAdj(outVal curLine.j curLine.k)
+        outVal = RESULT
+    end
+    return outVal
+
+    /*given a line, see if it passes the increaing test*/
+incTest: arg curLine
+    parse var curLine curLine.1 curLine.2 curLine.3 curLine.4,
+    curLine.5 curLine.6 curLine.7 curLine.8 
+    valCount=words(curLine)
+    outVal=1
+    do j=1 to valCount-1 by 1
+        k=j+1
+        call checkIncrease(outVal curLine.j curLine.k)
+        outVal = RESULT
+    end
+    return outVal
+
+/*given a line, see if it passes the decreasing test*/
+decTest: arg curLine
+    parse var curLine curLine.1 curLine.2 curLine.3 curLine.4,
+    curLine.5 curLine.6 curLine.7 curLine.8 
+    valCount=words(curLine)
+    outVal=1
+    do j=1 to valCount-1 by 1
+        k=j+1
+        call checkDecrease(outVal curLine.j curLine.k)
+        outVal = RESULT
+    end
+    return outVal
+
+/*rebuild a line without an element of a given number*/
+rebuildLine: arg num curLine
+    parse var curLine curLine.1 curLine.2 curLine.3 curLine.4,
+    curLine.5 curLine.6 curLine.7 curLine.8
+    outLine=""
+    valCount=words(curLine)
+    do k=1 to valCount by 1
+        if k=num then nop 
+        else outLine=outLine curLine.k
+    end
+    
+    return outLine
 
 
-/* i'm a bit stuck. i think i know why. i don't know if femoving the first*/
-/* element or the scond element will fix it. so i need to be able to test both*/
+/*see if you can get a true result for adj by removing 1 variable */
+adjDampaner: arg curLine
+    parse var curLine curLine.1 curLine.2 curLine.3 curLine.4,
+    curLine.5 curLine.6 curLine.7 curLine.8 
+    valCount=words(curLine)
+    do l=1 to valCount by 1
+        call rebuildLine(l curLine)
+        workingLine=result
+        call adjTest(workingLine)
+        safeVal=result
+        if safeVal=1 then return 1
+    end
+    return 0
+
+    /*see if you can get a true result for adj by removing 1 variable */
+incDampaner: arg curLine
+    parse var curLine curLine.1 curLine.2 curLine.3 curLine.4,
+    curLine.5 curLine.6 curLine.7 curLine.8 
+    valCount=words(curLine)
+    
+    do l=1 to valCount by 1
+        call rebuildLine(l curLine)
+        workingLine=result
+        call incTest(workingLine)
+        safeVal=result
+        if safeVal=1 then return 1
+    end
+    return 0
+
+    /*see if you can get a true result for adj by removing 1 variable */
+decDampaner: arg curLine
+    valCount=words(curLine)
+     do l=1 to valCount by 1
+        call rebuildLine(l curLine)
+        workingLine=result
+        call decTest(workingLine)
+        safeVal=result
+        if safeVal=1 then return 1
+    end
+    return 0
+
+/*test adjacent and decrease under the same conditions of* 
+dedAndAdjDampaner:
