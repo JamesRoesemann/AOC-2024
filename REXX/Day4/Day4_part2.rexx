@@ -18,7 +18,7 @@ totalXmas=0
 maxLines=inLine.0
 
 
-do i=1 to maxLines-1 by 1
+do i=1 to maxLines by 1
     j=i-1
     k=i+1
     call findX(inline.j inline.i inline.k)
@@ -37,7 +37,7 @@ exit
 findX: arg string1 string2 string3 
     charPos=1
     foundMas=0
-    do while charPos<length(string2)-1
+    do while charPos<length(string2)
         charPos=index(string2,'A',charPos+1)
         if charPos<>0 then do
             corner.1=substr(string1,charPos-1,1) /*NW*/
@@ -49,7 +49,7 @@ findX: arg string1 string2 string3
             ADDRESS SYSTEM "sort" WITH INPUT STEM corner. OUTPUT STEM outSort.
 
             if outSort.1="M" & outSort.2="M" & outSort.3="S" & outSort.4="S" &,
-                corner.1<>corner.4 then do
+                corner.1<>corner.4 & corner.2<>corner.3 then do
                 foundMas=foundMas+1
             end
         end
@@ -80,3 +80,4 @@ checkMasRightSide: arg nw ne sw se
     /*2642 not right*/
 
     /*1972 again. i'm close. what am i doing wrong?*/
+    /*1974.*/
