@@ -36,23 +36,17 @@ goodLines=0 /*testing var*/
 do i=1 to inPages.0 by 1
     /*pages presumed to pass untill they fail a rule*/
     passesRules=1
+
     /*iterate through all the rules untill it fails a rule*/
     do j=1 to rules.0 by 1
         if passesRule<>0 then do
-            leftRule=substr(rules.j,1,2)
-            rightRule=substr(rules.j,4,2)
-            /*test to see if both pages from the rule exist*/
-            leftPos=index(inPages.i,leftRule)
-            rightPos=index(inPages.i,rightRule)
-            if leftPos>0 & rightPos>0 then do
-                /* if pages are in the wrong order. fails the rule. end search*/
-                if leftPos>rightPos then do
-                    passesRules=0
-                    j=rules.0
-
-                end
+            call isValid(rules.j inPages.i)
+            if result=0 then do
+                passesRules=0
+                j=rules.0
             end
-            else nop
+                
+        else nop
         end
     end
     /*extract the middle value to add up*/
@@ -75,12 +69,36 @@ say "Total good lines" goodLines
 say "Sum of medium values from good lines" sumTargetNums
 
 
-/*not do the boken values*/
+
+
+
+/*now do the broken values*/
 sumBrokenlines=0
 do i=1 to brokenUpdates.0 by 1
-    do j=0 to rules.0 by 1
-        call reOrder(rule.j brokenUpdates.i)
-        brokenUpdates.i=result
+
+    fixedUpdate=0
+    do while fixedUpdate<>1
+        passesRules=1
+        do j=1 to rules.0 by 1
+            leftRule=substr(rules.j,1,2)
+            rightRule=substr(rules.j,4,2)
+            leftPos=index(brokenUpdates.i,leftRule)
+            rightPos=index(brokenUpdates.i,rightRule)
+
+            call isValid(rules.j brokenUpdates.i)
+            testResult=result
+            if testResult=0 then do
+
+                passesRules=0
+                call reOrder(rule.j brokenUpdates.i)
+                brokenUpdates.i=result
+
+            end 
+            else nop
+        end
+        if passesRules=1 then do
+            fixedUpdate=1 
+        end
     end
     call getMiddleValue(brokenUpdates.i)
     sumBrokenlines=sumBrokenlines+result
@@ -114,7 +132,8 @@ getMiddleValue: arg testString
 /*so that the first number must be before the second*/
 
 
-reOrder: arg inRule inString
+reOrder: arg inRule. inString
+
     target1=substr(inRule,1,2) 
     target2=substr(inRule,4,2)
     outString=""
@@ -122,20 +141,42 @@ reOrder: arg inRule inString
     wordCount=words(inString)
     pos1=wordpos(target1,inString)
     pos2=wordpos(target2,inString)
+    if pos1=0 | pos2=0 then return inString
     if pos1>pos2 then do
         /*set the begining of the string*/
-        if pos2>1 then do
+        /*if pos2>1 then do
             outString=subword(inString,1,pos2-1)
-        end
+        end*/
+        outString=target1" "subword(inString,1,pos2-1)
         /*ectrack the number between the 2 targets, if any*/
         midPortion=subWord(instring,pos2+1,pos1-pos2-1)
         /*after the moving target*/
         backHalf=subword(instring,pos1+1,words(inString))
         /*rebuild string*/
-        outString=outString" "target1" "target2" "midPortion" "backHalf
+        outString=outString" "target2" "midPortion" "backHalf
     end
     else outString=inString
     return outString
+
+
+/*given a string and a list of rules, returnes true if it passes all rules*/
+/* and false otherwise*/
+isValid: arg inRule inString
+    leftRule=substr(inRule,1,2)
+    rightRule=substr(inRule,4,2)
+    leftPos=index(inString,leftRule)
+    rightPos=index(inString,rightRule)
+
+    if leftPos=0 | rightPos=0 then return 1
+    if leftPos>0 & rightPos>0 & leftPos>rightPos then do
+        RETURN 0
+    END
+    else return 1
+
+
+
+
+
 
 
 
