@@ -143,12 +143,9 @@ reOrder: arg inRule. inString
     pos2=wordpos(target2,inString)
     if pos1=0 | pos2=0 then return inString
     if pos1>pos2 then do
-        /*set the begining of the string*/
-        /*if pos2>1 then do
-            outString=subword(inString,1,pos2-1)
-        end*/
+
         outString=target1" "subword(inString,1,pos2-1)
-        /*ectrack the number between the 2 targets, if any*/
+        /*get the numbers between the 2 targets, if any*/
         midPortion=subWord(instring,pos2+1,pos1-pos2-1)
         /*after the moving target*/
         backHalf=subword(instring,pos1+1,words(inString))
